@@ -1,5 +1,4 @@
 import asyncio
-import sentry_sdk
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -24,9 +23,6 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown(wait=False)
 
-
-if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
