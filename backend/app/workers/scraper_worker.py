@@ -84,6 +84,8 @@ async def _run_one(cls) -> ScraperResult:
 async def _upsert(session: AsyncSession, db_cls: Any, rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
+    # deduplicar por id — portais diferentes podem gerar o mesmo ID
+    rows = list({row["id"]: row for row in rows}.values())
     stmt = pg_insert(db_cls).values(rows)
     update_cols = {
         c.name: stmt.excluded[c.name]
