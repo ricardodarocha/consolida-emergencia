@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from app.scrapers.base import BaseScraper, ScraperResult
@@ -51,16 +52,19 @@ class AjudaJfArcteiScraper(BaseScraper):
             url=self.base_url,
         )
 
-        for action, key in [
-            ("listRequests", "requests"),
-            ("listPoints", "points"),
-            ("listVolunteers", "volunteers"),
-            ("listVistorias", "vistorias"),
-        ]:
-            try:
-                result.data[key] = await self._fetch_action(action)
-            except Exception as exc:
-                result.errors.append(f"{key}: {exc}")
+        actions = ["listRequests", "listPoints", "listVolunteers", "listVistorias"]
+        keys    = ["requests",     "points",     "volunteers",     "vistorias"]
+
+        responses = await asyncio.gather(
+            *[self._fetch_action(a) for a in actions],
+            return_exceptions=True,
+        )
+
+        for key, res in zip(keys, responses):
+            if isinstance(res, Exception):
+                result.errors.append(f"{key}: {res}")
                 result.data[key] = []
+            else:
+                result.data[key] = res
 
         return result
