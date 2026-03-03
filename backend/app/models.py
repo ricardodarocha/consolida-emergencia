@@ -199,6 +199,76 @@ class Outro(ScrapedItemBase, table=True):
 
 
 # ---------------------------------------------------------------------------
+# User-submitted data — schemas de input (sem metadados de scraping)
+# ---------------------------------------------------------------------------
+
+class PedidoCreate(SQLModel):
+    titulo: str | None = None
+    descricao: str | None = None
+    categoria: str | None = None
+    nome: str | None = None
+    contato: str | None = None
+    cidade: str | None = None
+    bairro: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+
+
+class VoluntarioCreate(SQLModel):
+    nome: str | None = None
+    descricao: str | None = None
+    categoria: str | None = None
+    contato: str | None = None
+    cidade: str | None = None
+    bairro: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+
+
+class PontoAjudaCreate(SQLModel):
+    tipo: str | None = None   # abrigo | coleta | doacao | entidade | abrigo_animal
+    nome: str | None = None
+    descricao: str | None = None
+    endereco: str | None = None
+    cidade: str | None = None
+    bairro: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    contato: str | None = None
+    horario: str | None = None
+    itens: list[str] = Field(default_factory=list)
+
+
+class PetCreate(SQLModel):
+    tipo: str  # perdido | encontrado | adocao
+    nome: str | None = None
+    especie: str | None = None
+    porte: str | None = None
+    descricao: str | None = None
+    contato: str | None = None
+    cidade: str | None = None
+    bairro: str | None = None
+    imagem_url: str | None = None
+
+
+class FeedItemCreate(SQLModel):
+    tipo: str  # alerta | noticia | relatorio
+    titulo: str | None = None
+    descricao: str | None = None
+    url: str | None = None
+    data: str | None = None
+    urgente: bool = False
+
+
+class OutroCreate(SQLModel):
+    tipo: str  # contato_emergencia | link | pix | saldo | registro | formulario | vaquinha
+    titulo: str | None = None
+    descricao: str | None = None
+    url: str | None = None
+    contato: str | None = None
+
+
+# ---------------------------------------------------------------------------
 # API Key
 # ---------------------------------------------------------------------------
 

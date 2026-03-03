@@ -1,12 +1,33 @@
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Query
 from sqlmodel import col, func, select
 
 from app.api.deps import ApiKeyDep, SessionDep
-from app.models import FeedItem, Outro, Pedido, Pet, PontoAjuda, Voluntario
+from app.models import (
+    FeedItem, FeedItemCreate,
+    Outro, OutroCreate,
+    Pedido, PedidoCreate,
+    Pet, PetCreate,
+    PontoAjuda, PontoAjudaCreate,
+    Voluntario, VoluntarioCreate,
+)
 
 router = APIRouter(tags=["data"])
+
+_USER_PORTAL_ID = "usuario"
+_USER_PORTAL_NAME = "Contribuição de usuário"
+_USER_PORTAL_URL = ""
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _user_id(prefix: str, cidade: str | None = None) -> str:
+    return f"{_USER_PORTAL_ID}:{cidade or 'sem-cidade'}:{uuid.uuid4().hex[:12]}"
 
 
 # ---------------------------------------------------------------------------
@@ -47,6 +68,22 @@ async def list_pedidos(
     return _list_response(items, count)
 
 
+@router.post("/pedidos", status_code=201)
+async def create_pedido(session: SessionDep, data: PedidoCreate) -> Any:
+    item = Pedido(
+        id=_user_id("pedido", data.cidade),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
+
+
 # ---------------------------------------------------------------------------
 # Voluntários
 # ---------------------------------------------------------------------------
@@ -74,6 +111,22 @@ async def list_voluntarios(
     return _list_response(items, count)
 
 
+@router.post("/voluntarios", status_code=201)
+async def create_voluntario(session: SessionDep, data: VoluntarioCreate) -> Any:
+    item = Voluntario(
+        id=_user_id("voluntario", data.cidade),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
+
+
 # ---------------------------------------------------------------------------
 # Pontos de Ajuda
 # ---------------------------------------------------------------------------
@@ -99,6 +152,22 @@ async def list_pontos(
     count = (await session.exec(select(func.count()).select_from(q.subquery()))).one()
     items = (await session.exec(q.order_by(col(PontoAjuda.scraped_at).desc()).offset(skip).limit(limit))).all()
     return _list_response(items, count)
+
+
+@router.post("/pontos", status_code=201)
+async def create_ponto(session: SessionDep, data: PontoAjudaCreate) -> Any:
+    item = PontoAjuda(
+        id=_user_id("ponto", data.cidade),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +200,22 @@ async def list_pets(
     return _list_response(items, count)
 
 
+@router.post("/pets", status_code=201)
+async def create_pet(session: SessionDep, data: PetCreate) -> Any:
+    item = Pet(
+        id=_user_id("pet", data.cidade),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
+
+
 # ---------------------------------------------------------------------------
 # Feed
 # ---------------------------------------------------------------------------
@@ -158,6 +243,22 @@ async def list_feed(
     return _list_response(items, count)
 
 
+@router.post("/feed", status_code=201)
+async def create_feed_item(session: SessionDep, data: FeedItemCreate) -> Any:
+    item = FeedItem(
+        id=_user_id("feed"),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
+
+
 # ---------------------------------------------------------------------------
 # Outros
 # ---------------------------------------------------------------------------
@@ -180,3 +281,19 @@ async def list_outros(
     count = (await session.exec(select(func.count()).select_from(q.subquery()))).one()
     items = (await session.exec(q.order_by(col(Outro.scraped_at).desc()).offset(skip).limit(limit))).all()
     return _list_response(items, count)
+
+
+@router.post("/outros", status_code=201)
+async def create_outro(session: SessionDep, data: OutroCreate) -> Any:
+    item = Outro(
+        id=_user_id("outro"),
+        portal_id=_USER_PORTAL_ID,
+        portal_name=_USER_PORTAL_NAME,
+        portal_url=_USER_PORTAL_URL,
+        scraped_at=_now(),
+        **data.model_dump(),
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
