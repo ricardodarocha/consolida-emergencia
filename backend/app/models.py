@@ -16,6 +16,7 @@ def get_datetime_utc() -> datetime:
 # User
 # ---------------------------------------------------------------------------
 
+
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
@@ -71,6 +72,7 @@ class UsersPublic(SQLModel):
 # Generic
 # ---------------------------------------------------------------------------
 
+
 class Message(SQLModel):
     message: str
 
@@ -88,6 +90,7 @@ class TokenPayload(SQLModel):
 # Scraped data — base comum (não é tabela)
 # ---------------------------------------------------------------------------
 
+
 class ScrapedItemBase(SQLModel):
     portal_id: str = Field(index=True)
     portal_name: str
@@ -99,6 +102,7 @@ class ScrapedItemBase(SQLModel):
 # ---------------------------------------------------------------------------
 # Pedido
 # ---------------------------------------------------------------------------
+
 
 class Pedido(ScrapedItemBase, table=True):
     id: str = Field(primary_key=True)
@@ -125,6 +129,7 @@ class Pedido(ScrapedItemBase, table=True):
 # Voluntario
 # ---------------------------------------------------------------------------
 
+
 class Voluntario(ScrapedItemBase, table=True):
     id: str = Field(primary_key=True)
     nome: str | None = None
@@ -141,6 +146,7 @@ class Voluntario(ScrapedItemBase, table=True):
 # PontoAjuda
 # ---------------------------------------------------------------------------
 
+
 class PontoAjuda(ScrapedItemBase, table=True):
     __tablename__ = "ponto_ajuda"
 
@@ -155,16 +161,19 @@ class PontoAjuda(ScrapedItemBase, table=True):
     lng: float | None = None
     contato: str | None = None
     horario: str | None = None
-    itens: list[str] = Field(default_factory=list, sa_column=Column(ARRAY(Text), nullable=False))
+    itens: list[str] = Field(
+        default_factory=list, sa_column=Column(ARRAY(Text), nullable=False)
+    )
 
 
 # ---------------------------------------------------------------------------
 # Pet
 # ---------------------------------------------------------------------------
 
+
 class Pet(ScrapedItemBase, table=True):
     id: str = Field(primary_key=True)
-    tipo: str = Field(index=True)           # perdido | encontrado | adocao
+    tipo: str = Field(index=True)  # perdido | encontrado | adocao
     nome: str | None = None
     especie: str | None = Field(default=None, index=True)
     porte: str | None = None
@@ -180,11 +189,14 @@ class Pet(ScrapedItemBase, table=True):
 # FeedItem
 # ---------------------------------------------------------------------------
 
+
 class FeedItem(ScrapedItemBase, table=True):
     __tablename__ = "feed_item"
 
     id: str = Field(primary_key=True)
-    tipo: str = Field(index=True)           # alerta | noticia | relatorio | interdicao | vistoria | transacao
+    tipo: str = Field(
+        index=True
+    )  # alerta | noticia | relatorio | interdicao | vistoria | transacao
     titulo: str | None = None
     descricao: str | None = None
     url: str | None = None
@@ -196,9 +208,12 @@ class FeedItem(ScrapedItemBase, table=True):
 # Outro
 # ---------------------------------------------------------------------------
 
+
 class Outro(ScrapedItemBase, table=True):
     id: str = Field(primary_key=True)
-    tipo: str = Field(index=True)           # contato_emergencia | link | pix | saldo | registro | formulario | vaquinha
+    tipo: str = Field(
+        index=True
+    )  # contato_emergencia | link | pix | saldo | registro | formulario | vaquinha
     titulo: str | None = None
     descricao: str | None = None
     url: str | None = None
@@ -209,7 +224,9 @@ class Outro(ScrapedItemBase, table=True):
 # User-submitted data — schemas de input (sem metadados de scraping)
 # ---------------------------------------------------------------------------
 
+
 class PedidoCreate(SQLModel):
+    portal_name: str | None = None
     titulo: str | None = None
     descricao: str | None = None
     categoria: str | None = None
@@ -229,10 +246,11 @@ class PedidoCreate(SQLModel):
 
 
 class PedidoUpdate(PedidoCreate):
-    pass
+    status: str | None = None
 
 
 class VoluntarioCreate(SQLModel):
+    portal_name: str | None = None
     nome: str | None = None
     descricao: str | None = None
     categoria: str | None = None
@@ -248,7 +266,8 @@ class VoluntarioUpdate(VoluntarioCreate):
 
 
 class PontoAjudaCreate(SQLModel):
-    tipo: str | None = None   # abrigo | coleta | doacao | entidade | abrigo_animal
+    portal_name: str | None = None
+    tipo: str | None = None  # abrigo | coleta | doacao | entidade | abrigo_animal
     nome: str | None = None
     descricao: str | None = None
     endereco: str | None = None
@@ -266,6 +285,7 @@ class PontoAjudaUpdate(PontoAjudaCreate):
 
 
 class PetCreate(SQLModel):
+    portal_name: str | None = None
     tipo: str  # perdido | encontrado | adocao
     nome: str | None = None
     especie: str | None = None
@@ -282,6 +302,7 @@ class PetUpdate(PetCreate):
 
 
 class FeedItemCreate(SQLModel):
+    portal_name: str | None = None
     tipo: str  # alerta | noticia | relatorio
     titulo: str | None = None
     descricao: str | None = None
@@ -296,6 +317,7 @@ class FeedItemUpdate(FeedItemCreate):
 
 
 class OutroCreate(SQLModel):
+    portal_name: str | None = None
     tipo: str  # contato_emergencia | link | pix | saldo | registro | formulario | vaquinha
     titulo: str | None = None
     descricao: str | None = None
@@ -308,14 +330,54 @@ class OutroUpdate(OutroCreate):
 
 
 # ---------------------------------------------------------------------------
+# Evento
+# ---------------------------------------------------------------------------
+
+
+class Evento(ScrapedItemBase, table=True):
+    id: str = Field(primary_key=True)
+    tipo: str = Field(index=True)  # indicacao_recurso | ...
+    destinatario: str = Field(index=True)  # portal que receberá o evento
+    status: str = Field(
+        default="aberto", index=True
+    )  # aberto | em_atendimento | atendido
+    metadados: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)  # type: ignore
+
+
+class EventoCreate(SQLModel):
+    portal_name: str | None = None
+    tipo: str
+    destinatario: str
+    metadados: dict[str, Any] = Field(default_factory=dict)
+
+
+class EventoUpdate(SQLModel):
+    tipo: str | None = None
+    destinatario: str | None = None
+    status: str | None = None
+    metadados: dict[str, Any] | None = None
+
+
+class EventoList(SQLModel):
+    data: list[Evento]
+    count: int
+
+
+# ---------------------------------------------------------------------------
 # API Key
 # ---------------------------------------------------------------------------
+
+
+def _slugify(value: str) -> str:
+    return value.strip().lower().replace(" ", "-")
+
 
 class ApiKey(SQLModel, table=True):
     __tablename__ = "api_key"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=255)
+    slug: str = Field(max_length=255, unique=True, index=True)
     description: str | None = None
     prefix: str = Field(max_length=8, index=True)
     key_hash: str = Field(unique=True)
@@ -326,6 +388,46 @@ class ApiKey(SQLModel, table=True):
     is_active: bool = Field(default=True, index=True)
 
 
+# ---------------------------------------------------------------------------
+# Respostas de listagem tipadas
+# ---------------------------------------------------------------------------
+
+
+class PedidoList(SQLModel):
+    data: list[Pedido]
+    count: int
+
+
+class VoluntarioList(SQLModel):
+    data: list[Voluntario]
+    count: int
+
+
+class PontoAjudaList(SQLModel):
+    data: list[PontoAjuda]
+    count: int
+
+
+class PetList(SQLModel):
+    data: list[Pet]
+    count: int
+
+
+class FeedItemList(SQLModel):
+    data: list[FeedItem]
+    count: int
+
+
+class OutroList(SQLModel):
+    data: list[Outro]
+    count: int
+
+
+# ---------------------------------------------------------------------------
+# API Key
+# ---------------------------------------------------------------------------
+
+
 class ApiKeyCreate(SQLModel):
     name: str = Field(max_length=255)
     description: str | None = None
@@ -334,6 +436,7 @@ class ApiKeyCreate(SQLModel):
 class ApiKeyPublic(SQLModel):
     id: uuid.UUID
     name: str
+    slug: str
     description: str | None
     prefix: str
     created_at: datetime

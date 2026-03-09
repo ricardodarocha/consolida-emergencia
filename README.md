@@ -7,94 +7,36 @@ API centralizadora de pedidos de ajuda, voluntários, doações e outros dados d
 - **FastAPI** + **SQLModel** (async) + **PostgreSQL**
 - **APScheduler** — scraping automático a cada hora
 - **httpx** + **BeautifulSoup4** — scrapers
+- **Ruff** — linter e formatter
 - **uv** — gerenciador de pacotes
 
 ---
 
-## Rodando local
+## Quick start
 
-### Pré-requisitos
-
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- PostgreSQL rodando em `localhost:5432`
-
-### 1. Configurar variáveis de ambiente
+### Local
 
 ```bash
-cp .env.example .env
-# edite .env com suas credenciais do Postgres
-```
-
-### 2. Instalar dependências
-
-```bash
+cp .env.example .env          # configure suas credenciais
 cd backend
-uv sync
+uv sync                        # instala dependências
+uv run alembic upgrade head    # roda migrations
+uv run python app/initial_data.py  # cria superuser
+uv run fastapi dev app/main.py     # sobe a API
 ```
 
-### 3. Rodar migrations
+API em **http://localhost:8000** | Docs em **http://localhost:8000/docs**
+
+### Docker
 
 ```bash
-cd backend
-uv run alembic upgrade head
+cp .env.example .env           # mínimo: POSTGRES_PASSWORD, SECRET_KEY, FIRST_SUPERUSER_PASSWORD
+docker compose up --build      # sobe tudo (banco + migrations + API)
 ```
 
-### 4. Criar superuser inicial
-
 ```bash
-cd backend
-uv run python app/initial_data.py
-```
-
-### 5. Subir a API
-
-```bash
-cd backend
-uv run fastapi dev app/main.py
-```
-
-API disponível em **http://localhost:8000**
-Docs em **http://localhost:8000/docs**
-
----
-
-## Rodando com Docker
-
-### Pré-requisitos
-
-- Docker + Docker Compose
-
-### 1. Configurar variáveis de ambiente
-
-```bash
-cp .env.example .env
-# edite .env — mínimo obrigatório: POSTGRES_PASSWORD, SECRET_KEY, FIRST_SUPERUSER_PASSWORD
-```
-
-### 2. Subir
-
-```bash
-docker compose up --build
-```
-
-Isso irá:
-1. Subir o PostgreSQL
-2. Aguardar o banco ficar disponível
-3. Rodar as migrations automaticamente
-4. Criar o superuser inicial
-5. Subir a API em **http://localhost:8000**
-
-### Parar
-
-```bash
-docker compose down
-```
-
-### Parar e remover dados do banco
-
-```bash
-docker compose down -v
+docker compose down            # para
+docker compose down -v         # para e remove dados do banco
 ```
 
 ---
@@ -146,16 +88,25 @@ todo! importar rotas `rust`
 |--------|------|------|-----------|
 | `GET` | `/api/v1/pedidos` | API Key | Lista pedidos de socorro |
 | `POST` | `/api/v1/pedidos` | API Key | Cria pedido |
+| `PUT/PATCH` | `/api/v1/pedidos/{id}` | API Key | Atualiza pedido (só o portal que criou) |
 | `GET` | `/api/v1/voluntarios` | API Key | Lista voluntários |
 | `POST` | `/api/v1/voluntarios` | API Key | Cadastra voluntário |
+| `PUT/PATCH` | `/api/v1/voluntarios/{id}` | API Key | Atualiza voluntário (só o portal que criou) |
 | `GET` | `/api/v1/pontos` | API Key | Lista pontos de ajuda |
 | `POST` | `/api/v1/pontos` | API Key | Cria ponto de ajuda |
+| `PUT/PATCH` | `/api/v1/pontos/{id}` | API Key | Atualiza ponto (só o portal que criou) |
 | `GET` | `/api/v1/pets` | API Key | Lista pets (perdidos/encontrados/adoção) |
 | `POST` | `/api/v1/pets` | API Key | Cadastra pet |
+| `PUT/PATCH` | `/api/v1/pets/{id}` | API Key | Atualiza pet (só o portal que criou) |
 | `GET` | `/api/v1/feed` | API Key | Lista alertas e notícias |
 | `POST` | `/api/v1/feed` | API Key | Cria item no feed |
+| `PUT/PATCH` | `/api/v1/feed/{id}` | API Key | Atualiza item do feed (só o portal que criou) |
 | `GET` | `/api/v1/outros` | API Key | Lista contatos, links, vaquinhas |
 | `POST` | `/api/v1/outros` | API Key | Cria item |
+| `PUT/PATCH` | `/api/v1/outros/{id}` | API Key | Atualiza item (só o portal que criou) |
+| `GET` | `/api/v1/eventos` | API Key | Lista eventos entre portais |
+| `POST` | `/api/v1/eventos` | API Key | Cria evento (ex: indicação de doador) |
+| `PUT/PATCH` | `/api/v1/eventos/{id}` | API Key | Atualiza evento (remetente ou destinatário) |
 | `POST` | `/api/v1/users/signup` | — | Cria conta de desenvolvedor |
 | `POST` | `/api/v1/login/access-token` | — | Login (retorna JWT) |
 | `POST` | `/api/v1/api-keys` | — | Registra API Key |
@@ -163,3 +114,9 @@ todo! importar rotas `rust`
 Todos os GETs aceitam `?skip=0&limit=100` e filtros específicos por endpoint (ex: `?cidade=juiz+de+fora&categoria=agua`).
 
 Documentação interativa completa em `/docs`.
+
+---
+
+## Contribuindo
+
+Veja o [CONTRIBUTING.md](CONTRIBUTING.md) para setup do ambiente, comandos de lint/format/testes e convenções do projeto.
