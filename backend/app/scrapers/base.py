@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -53,6 +54,31 @@ class BaseScraper(ABC):
             timeout=30.0,
             follow_redirects=True,
         )
+
+    def create_result(self) -> ScraperResult:
+        """Cria ScraperResult pré-preenchido com metadados do portal."""
+        return ScraperResult(
+            portal_id=self.portal_id,
+            portal_name=self.portal_name,
+            url=self.base_url,
+        )
+
+    async def safe_fetch(
+        self,
+        result: ScraperResult,
+        key: str,
+        coro: Awaitable[Any],
+        *,
+        default: Any = None,
+    ) -> None:
+        """Executa coro e salva em result.data[key]; em caso de erro, salva default e registra erro."""
+        if default is None:
+            default = []
+        try:
+            result.data[key] = await coro
+        except Exception as exc:
+            result.errors.append(f"{key}: {exc}")
+            result.data[key] = default
 
     @abstractmethod
     async def scrape(self) -> ScraperResult:
