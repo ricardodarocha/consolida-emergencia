@@ -55,6 +55,10 @@ docker compose down -v         # para e remove dados do banco
 | `FIRST_SUPERUSER_PASSWORD` | Senha do admin | — |
 | `SCRAPER_INTERVAL_HOURS` | Intervalo do scraping | `1` |
 | `SCRAPER_RUN_ON_STARTUP` | Rodar scraping ao iniciar | `false` |
+| `KPIS_INTERVAL_HOURS` | Intervalo de atualização dos KPIs | mesmo do scraper |
+| `KPIS_RUN_ON_STARTUP` | Calcular KPIs ao iniciar | `false` |
+| `DB_POOL_SIZE` | Tamanho do pool de conexões | `10` |
+| `DB_MAX_OVERFLOW` | Conexões extras além do pool | `20` |
 
 ---
 
@@ -79,39 +83,58 @@ curl http://localhost:8000/api/v1/pedidos \
 
 ### Endpoints disponíveis
 
-todo! vincular com https://doc-hub-emergencia-api.vercel.app/docs/endpoints
+#### Dados públicos (requerem API Key via header `X-API-Key`)
 
-todo! incorporar estas rotas
-todo! importar rotas `rust`
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/v1/pedidos` | Lista pedidos de socorro |
+| `POST` | `/api/v1/pedidos` | Cria pedido |
+| `PUT/PATCH` | `/api/v1/pedidos/{id}` | Atualiza pedido (só o portal que criou) |
+| `GET` | `/api/v1/voluntarios` | Lista voluntários |
+| `POST` | `/api/v1/voluntarios` | Cadastra voluntário |
+| `PUT/PATCH` | `/api/v1/voluntarios/{id}` | Atualiza voluntário (só o portal que criou) |
+| `GET` | `/api/v1/pontos` | Lista pontos de ajuda |
+| `POST` | `/api/v1/pontos` | Cria ponto de ajuda |
+| `PUT/PATCH` | `/api/v1/pontos/{id}` | Atualiza ponto (só o portal que criou) |
+| `GET` | `/api/v1/pets` | Lista pets (perdidos/encontrados/adoção) |
+| `POST` | `/api/v1/pets` | Cadastra pet |
+| `PUT/PATCH` | `/api/v1/pets/{id}` | Atualiza pet (só o portal que criou) |
+| `GET` | `/api/v1/feed` | Lista alertas e notícias |
+| `POST` | `/api/v1/feed` | Cria item no feed |
+| `PUT/PATCH` | `/api/v1/feed/{id}` | Atualiza item do feed (só o portal que criou) |
+| `GET` | `/api/v1/outros` | Lista contatos, links, vaquinhas |
+| `POST` | `/api/v1/outros` | Cria item |
+| `PUT/PATCH` | `/api/v1/outros/{id}` | Atualiza item (só o portal que criou) |
+| `GET` | `/api/v1/eventos` | Lista eventos entre portais |
+| `POST` | `/api/v1/eventos` | Cria evento (ex: indicação de doador) |
+| `PUT/PATCH` | `/api/v1/eventos/{id}` | Atualiza evento (remetente ou destinatário) |
+| `GET` | `/api/v1/kpis/` | Histórico de KPIs |
+| `GET` | `/api/v1/kpis/ultimo` | Último snapshot de KPIs |
+
+#### API Keys
 
 | Método | Rota | Auth | Descrição |
 |--------|------|------|-----------|
-| `GET` | `/api/v1/pedidos` | API Key | Lista pedidos de socorro |
-| `POST` | `/api/v1/pedidos` | API Key | Cria pedido |
-| `PUT/PATCH` | `/api/v1/pedidos/{id}` | API Key | Atualiza pedido (só o portal que criou) |
-| `GET` | `/api/v1/voluntarios` | API Key | Lista voluntários |
-| `POST` | `/api/v1/voluntarios` | API Key | Cadastra voluntário |
-| `PUT/PATCH` | `/api/v1/voluntarios/{id}` | API Key | Atualiza voluntário (só o portal que criou) |
-| `GET` | `/api/v1/pontos` | API Key | Lista pontos de ajuda |
-| `POST` | `/api/v1/pontos` | API Key | Cria ponto de ajuda |
-| `PUT/PATCH` | `/api/v1/pontos/{id}` | API Key | Atualiza ponto (só o portal que criou) |
-| `GET` | `/api/v1/pets` | API Key | Lista pets (perdidos/encontrados/adoção) |
-| `POST` | `/api/v1/pets` | API Key | Cadastra pet |
-| `PUT/PATCH` | `/api/v1/pets/{id}` | API Key | Atualiza pet (só o portal que criou) |
-| `GET` | `/api/v1/feed` | API Key | Lista alertas e notícias |
-| `POST` | `/api/v1/feed` | API Key | Cria item no feed |
-| `PUT/PATCH` | `/api/v1/feed/{id}` | API Key | Atualiza item do feed (só o portal que criou) |
-| `GET` | `/api/v1/outros` | API Key | Lista contatos, links, vaquinhas |
-| `POST` | `/api/v1/outros` | API Key | Cria item |
-| `PUT/PATCH` | `/api/v1/outros/{id}` | API Key | Atualiza item (só o portal que criou) |
-| `GET` | `/api/v1/eventos` | API Key | Lista eventos entre portais |
-| `POST` | `/api/v1/eventos` | API Key | Cria evento (ex: indicação de doador) |
-| `PUT/PATCH` | `/api/v1/eventos/{id}` | API Key | Atualiza evento (remetente ou destinatário) |
+| `POST` | `/api/v1/api-keys` | — | Registra API Key |
+| `GET` | `/api/v1/api-keys` | JWT | Lista API Keys do usuário |
+| `GET` | `/api/v1/api-keys/me/{prefix}` | JWT | Detalhes de uma key |
+| `DELETE` | `/api/v1/api-keys/{id}` | JWT | Remove API Key |
+
+#### Auth e usuários
+
+| Método | Rota | Auth | Descrição |
+|--------|------|------|-----------|
 | `POST` | `/api/v1/users/signup` | — | Cria conta de desenvolvedor |
 | `POST` | `/api/v1/login/access-token` | — | Login (retorna JWT) |
-| `POST` | `/api/v1/api-keys` | — | Registra API Key |
 
-Todos os GETs aceitam `?skip=0&limit=100` e filtros específicos por endpoint (ex: `?cidade=juiz+de+fora&categoria=agua`).
+#### Health
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/v1/utils/health-check/` | Liveness check |
+| `GET` | `/api/v1/utils/ready/` | Readiness check (banco + último scraping) |
+
+Todos os GETs de dados aceitam `?skip=0&limit=100` e filtros específicos por endpoint (ex: `?cidade=juiz+de+fora&tipo=abrigo`).
 
 Documentação interativa completa em `/docs`.
 

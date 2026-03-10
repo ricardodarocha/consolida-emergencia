@@ -96,6 +96,34 @@ O projeto roda lint e testes automaticamente via GitHub Actions em todo push e P
 
 ---
 
+## Arquitetura
+
+### Pipeline de scraping
+
+```
+scrapers/ → BaseScraper.scrape() → ScraperResult
+    ↓
+normalizers/ → normalize() → NormalizedResult (pedidos, voluntarios, pontos, pets, feed, outros)
+    ↓
+workers/scraper_worker.py → run_all_scrapers() → persiste no banco
+    ↓
+cron.py → APScheduler roda a cada SCRAPER_INTERVAL_HOURS
+```
+
+- Cada scraper herda de `BaseScraper` e implementa `scrape()`
+- Usar `self.create_result()` para criar o `ScraperResult` e `self.safe_fetch()` para wraps try/except com logging automático
+- Normalizers em `scrapers/normalizers/` — um módulo por portal
+
+### Camada de serviço
+
+As rotas de dados usam `services/data_service.py` para queries ao banco. Não colocar lógica de query diretamente nos handlers.
+
+### Logging
+
+O projeto usa **structlog** com logs estruturados em JSON. Usar `structlog.get_logger()` em vez de `print()` ou `logging`.
+
+---
+
 ## Convenções
 
 - **Mensagens de erro da API** em português
@@ -103,3 +131,4 @@ O projeto roda lint e testes automaticamente via GitHub Actions em todo push e P
 - **Branches** com prefixo descritivo (ex: `feat/nova-rota`, `fix/correcao-login`, `chore/ruff-setup`)
 - **Modelos de resposta** sempre tipados — sem retornar `dict` puro nas rotas
 - **Linter/Formatter** — Ruff com as regras definidas em `pyproject.toml`
+- **Scrapers** — usar `create_result()` + `safe_fetch()` do `BaseScraper`; try/except manual só quando uma chamada alimenta múltiplas keys
