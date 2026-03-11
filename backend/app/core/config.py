@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     SCRAPER_INTERVAL_HOURS: int = 1
     SCRAPER_RUN_ON_STARTUP: bool = False
 
+    KPIS_INTERVAL_HOURS: int = SCRAPER_INTERVAL_HOURS
+    KPIS_RUN_ON_STARTUP: bool = False
+
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

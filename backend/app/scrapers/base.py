@@ -1,9 +1,18 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any
 
 import httpx
+
+
+class ScraperStatus(str, Enum):
+    SUCCESS = "success"  # dados coletados sem erros
+    PARTIAL = "partial"  # dados coletados com erros parciais
+    EMPTY = "empty"  # sem dados (legítimo, portal vazio)
+    ERROR = "error"  # falha total
 
 
 @dataclass
@@ -11,9 +20,21 @@ class ScraperResult:
     portal_id: str
     portal_name: str
     url: str
+    status: ScraperStatus = ScraperStatus.SUCCESS
     scraped_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     data: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
+
+    def resolve_status(self) -> None:
+        has_data = any(bool(v) for v in self.data.values() if isinstance(v, list))
+        if self.errors and has_data:
+            self.status = ScraperStatus.PARTIAL
+        elif self.errors:
+            self.status = ScraperStatus.ERROR
+        elif not has_data:
+            self.status = ScraperStatus.EMPTY
+        else:
+            self.status = ScraperStatus.SUCCESS
 
 
 class BaseScraper(ABC):
@@ -33,6 +54,31 @@ class BaseScraper(ABC):
             timeout=30.0,
             follow_redirects=True,
         )
+
+    def create_result(self) -> ScraperResult:
+        """Cria ScraperResult pré-preenchido com metadados do portal."""
+        return ScraperResult(
+            portal_id=self.portal_id,
+            portal_name=self.portal_name,
+            url=self.base_url,
+        )
+
+    async def safe_fetch(
+        self,
+        result: ScraperResult,
+        key: str,
+        coro: Awaitable[Any],
+        *,
+        default: Any = None,
+    ) -> None:
+        """Executa coro e salva em result.data[key]; em caso de erro, salva default e registra erro."""
+        if default is None:
+            default = []
+        try:
+            result.data[key] = await coro
+        except Exception as exc:
+            result.errors.append(f"{key}: {exc}")
+            result.data[key] = default
 
     @abstractmethod
     async def scrape(self) -> ScraperResult:

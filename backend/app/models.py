@@ -7,6 +7,8 @@ from sqlalchemy import ARRAY, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
+# para usar no sistema de cron e kpis, para marcar quando os dados foram atualizados pela última vez
+
 
 def get_datetime_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -97,6 +99,14 @@ class ScrapedItemBase(SQLModel):
     portal_url: str
     scraped_at: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
     raw: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)  # type: ignore
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -445,3 +455,26 @@ class ApiKeyPublic(SQLModel):
 
 class ApiKeyCreated(ApiKeyPublic):
     key: str  # plain-text key, shown only once
+
+
+# ---------------------------------------------------------------------------
+# KPIs
+# ---------------------------------------------------------------------------
+
+
+class KPIHistory(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    nome_kpi: str
+    valor: int
+    data_registro: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class KPIHistoryPublic(SQLModel):
+    nome_kpi: str
+    valor: int
+    data_registro: datetime
+
+
+class KPIHistoryList(SQLModel):
+    data: list[KPIHistoryPublic]
+    count: int
