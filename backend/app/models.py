@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import EmailStr
 from sqlalchemy import ARRAY, Column, DateTime, Text
@@ -477,4 +477,67 @@ class KPIHistoryPublic(SQLModel):
 
 class KPIHistoryList(SQLModel):
     data: list[KPIHistoryPublic]
+    count: int
+
+
+# ---------------------------------------------------------------------------
+# Solicitação (robô WhatsApp)
+# ---------------------------------------------------------------------------
+
+IncidentPriority = Literal["CRITICA", "ALTA", "MEDIA", "BAIXA"]
+
+EmergencyService = Literal[
+    "Defesa Civil",
+    "Direitos Humanos",
+    "Desenvolvimento Social",
+    "Assistência Social",
+    "EMCASA",
+    "Defesa Animal",
+    "Canil Municipal",
+    "Procon",
+    "Secretaria de Comunicação",
+]
+
+
+class Solicitacao(SQLModel, table=True):
+    __tablename__ = "solicitacao"
+
+    uid: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    portal_id: str = Field(index=True)
+    portal_name: str
+    categoria: str
+    prioridade: str = Field(index=True)  # CRITICA | ALTA | MEDIA | BAIXA
+    bairro: str
+    orgao_responsavel: str = Field(index=True)
+    descricao_resumida: str
+    pessoas_afetadas: int = Field(default=0)
+    animais_afetados: int = Field(default=0)
+    risco_imediato: bool = Field(default=False, index=True)
+    protocolo_atendimento: str
+    media_hash: str | None = None
+    endereco_completo: str
+    metadados: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)  # type: ignore
+    criado_em: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class SolicitacaoCreate(SQLModel):
+    categoria: str
+    prioridade: IncidentPriority
+    bairro: str
+    orgao_responsavel: EmergencyService
+    descricao_resumida: str
+    pessoas_afetadas: int = 0
+    animais_afetados: int = 0
+    risco_imediato: bool = False
+    protocolo_atendimento: str
+    media_hash: str | None = None
+    endereco_completo: str
+    metadados: dict[str, Any] = Field(default_factory=dict)
+
+
+class SolicitacaoList(SQLModel):
+    data: list[Solicitacao]
     count: int
